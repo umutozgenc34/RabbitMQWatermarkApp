@@ -1,6 +1,18 @@
+using Microsoft.EntityFrameworkCore;
+using RabbitMQ.Client;
+using RabbitMQ.WatermarkApp.Models;
+using RabbitMQ.WatermarkApp.Service;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+builder.Services.AddSingleton(sp => new ConnectionFactory() { Uri = new Uri(builder.Configuration.GetConnectionString("RabbitMQ"))});
+builder.Services.AddSingleton<RabbitMQClientService>();
+builder.Services.AddSingleton<RabbitMQPublisher>();
+builder.Services.AddDbContext<AppDbContext>(options =>
+{
+    options.UseInMemoryDatabase(databaseName: "watermarkDb");
+});
 builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
