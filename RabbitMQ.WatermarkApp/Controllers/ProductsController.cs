@@ -56,32 +56,27 @@ namespace RabbitMQ.WatermarkApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Id,Name,Price,Stock,ImageName")] Product product, IFormFile ImageFile)
         {
-            if (!ModelState.IsValid)
-            {
-                return View(product);
-            }
+
 
             if (ImageFile != null && ImageFile.Length > 0)
             {
                 var randomImageName = Guid.NewGuid() + Path.GetExtension(ImageFile.FileName);
+                var imagesFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/Images");
 
-                var path = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images", randomImageName);
+                if (!Directory.Exists(imagesFolder))
+                    Directory.CreateDirectory(imagesFolder);
 
-              
-                await using FileStream stream = new(path, FileMode.Create);
+                var path = Path.Combine(imagesFolder, randomImageName);
+                await using var stream = new FileStream(path, FileMode.Create);
                 await ImageFile.CopyToAsync(stream);
 
-                
-                _rabbitMQPublisher.Publish(new ProductImageCreatedEvent() { ImageName = randomImageName });
-
-              
+                _rabbitMQPublisher.Publish(new ProductImageCreatedEvent { ImageName = randomImageName });
                 product.ImageName = randomImageName;
             }
 
             _context.Add(product);
             await _context.SaveChangesAsync();
 
-            
             return RedirectToAction(nameof(Index));
 
 
